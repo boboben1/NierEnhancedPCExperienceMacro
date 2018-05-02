@@ -85,7 +85,7 @@ namespace NierEnhancedPCExperienceMacro
         public int MouseHookProc(int code, int wParam, IntPtr _lParam)
         {
             bool handled = false;
-            var lParam = (MouseHookStruct)Marshal.PtrToStructure(_lParam, typeof(MouseHookStruct));
+            var lParam = Marshal.PtrToStructure<MouseHookStruct>(_lParam);
             if (code >= 0)
             {
 
@@ -171,6 +171,7 @@ namespace NierEnhancedPCExperienceMacro
 
         #region HookDefs
 
+        [StructLayout(LayoutKind.Sequential)]
         public struct KeyboardHookStruct
         {
             public int vkCode;
