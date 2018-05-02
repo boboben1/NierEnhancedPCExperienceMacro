@@ -61,14 +61,18 @@ namespace NierEnhancedPCExperienceMacro
             return CallNextHookEx(_kbhook, code, wParam, _lParam);
         }
 
-        private void KeyDispatch(Keys key, bool down)
+        private bool KeyDispatch(Keys key, bool down)
         {
-            if (!HookedKeys.Contains(key)) return;
+            if (!HookedKeys.Contains(key)) return false;
+
+            KeyEventArgs eventArgs = new KeyEventArgs(key);
 
             if (down)
-                KeyDown?.Invoke(this, new KeyEventArgs(key));
+                KeyDown?.Invoke(this, eventArgs);
             else
-                KeyUp?.Invoke(this, new KeyEventArgs(key));
+                KeyUp?.Invoke(this, eventArgs);
+
+            return eventArgs.Handled;
         }
 
         private void MouseDispatch(MouseButtons button, int clicks, POINT point, short mouseDelta)
@@ -80,16 +84,18 @@ namespace NierEnhancedPCExperienceMacro
 
         public int MouseHookProc(int code, int wParam, IntPtr _lParam)
         {
-
+            bool handled = false;
+            var lParam = (MouseHookStruct)Marshal.PtrToStructure(_lParam, typeof(MouseHookStruct));
             if (code >= 0)
             {
-                var lParam = (MouseHookStruct)Marshal.PtrToStructure(_lParam,typeof(MouseHookStruct));
+
 
                 MouseButtons button = MouseButtons.None;
                 short MouseDelta = 0;
                 int clickCount = 0;
                 bool down = true;
                 bool doubleClick = false;
+       
                 switch (wParam)
                 {
                     case WM_LBUTTONDOWN:
@@ -98,7 +104,7 @@ namespace NierEnhancedPCExperienceMacro
                         doubleClick = wParam == WM_LBUTTONDBLCLK;
                         down = wParam == WM_LBUTTONDOWN;
                         button = MouseButtons.Left;
-                        KeyDispatch(Keys.LButton, down);
+                        handled = KeyDispatch(Keys.LButton, down);
                         break;
                     case WM_RBUTTONDOWN:
                     case WM_RBUTTONUP:
@@ -106,7 +112,7 @@ namespace NierEnhancedPCExperienceMacro
                         doubleClick = wParam == WM_RBUTTONDBLCLK;
                         down = wParam == WM_RBUTTONDOWN;
                         button = MouseButtons.Right;
-                        KeyDispatch(Keys.RButton, down);
+                        handled = KeyDispatch(Keys.RButton, down);
                         break;
                     case WM_MBUTTONDOWN:
                     case WM_MBUTTONUP:
@@ -114,7 +120,7 @@ namespace NierEnhancedPCExperienceMacro
                         doubleClick = wParam == WM_MBUTTONDBLCLK;
                         down = wParam == WM_MBUTTONDOWN;
                         button = MouseButtons.Middle;
-                        KeyDispatch(Keys.MButton, down);
+                        handled = KeyDispatch(Keys.MButton, down);
                         break;
                     case WM_XBUTTONDOWN:
                     case WM_XBUTTONUP:
@@ -126,11 +132,11 @@ namespace NierEnhancedPCExperienceMacro
                         {
                             case 0x1:
                                 button = MouseButtons.XButton1;
-                                KeyDispatch(Keys.XButton1, down);
+                                handled = KeyDispatch(Keys.XButton1, down);
                                 break;
                             case 0x2:
                                 button = MouseButtons.XButton2;
-                                KeyDispatch(Keys.XButton2, down);
+                                handled = KeyDispatch(Keys.XButton2, down);
                                 break;
                         }
                         break;
@@ -142,13 +148,11 @@ namespace NierEnhancedPCExperienceMacro
 
                 clickCount = down || doubleClick ? (doubleClick ? 2 : 1) : 0;
 
-                MouseDispatch(button, clickCount, lParam.pt, MouseDelta);
+                if (!handled)
+                    MouseDispatch(button, clickCount, lParam.pt, MouseDelta);
             }
 
-
-
-
-            return CallNextHookEx(_mbhook, code, wParam, _lParam);
+            return CallNextHookEx(_mbhook, code, handled ? WM_MOUSEMOVE : wParam, _lParam);
         }
 
 

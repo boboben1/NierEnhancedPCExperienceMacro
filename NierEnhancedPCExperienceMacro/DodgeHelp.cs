@@ -32,6 +32,7 @@ namespace NierEnhancedPCExperienceMacro
             {
                 string key = _lastMovementKey.ToString().ToLower();
                 AutoItX.Send($"{key}{key}");
+                keyEventArgs.Handled = true;
             }
 
             //keyEventArgs.Handled = true;
